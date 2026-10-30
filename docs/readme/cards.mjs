@@ -1,9 +1,10 @@
 // Turns the raw screenshots in docs/readme/raw into designed README cards:
 // cream paper, a rounded ink border, a title, and the screenshot inside a
-// browser window or phone frames with riso offset shadows.
-// Usage: node docs/readme/capture.mjs shots && node docs/readme/cards.mjs   (needs ffmpeg)
+// browser window or phone frames with riso offset shadows. It also frames the raw
+// demo recording (raw/demo.mp4) in the same card: demo.mp4, demo.webp, demo.gif.
+// Usage: node docs/readme/capture.mjs && node docs/readme/cards.mjs   (needs ffmpeg)
 import { execFileSync } from "node:child_process";
-import { readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -117,4 +118,52 @@ for (const c of CARDS) {
   rmSync(png);
   console.log("wrote", `${c.file}.webp`);
 }
+// ---- The demo video, framed the same way ----
+const rawVideo = join(here, "raw", "demo.mp4");
+if (existsSync(rawVideo)) {
+  const [vw, vh] = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "csv=p=0", rawVideo])
+    .toString()
+    .trim()
+    .split(",")
+    .map(Number);
+  const videoCard = (square) => `<div class="card video-card" style="width:auto;height:auto;${square ? "border-radius:0;" : ""}"><div class="tape"></div>${buddy}
+    <div class="kicker">25 seconds · the real app</div><h1>Drop. Ask. Read the SQL.</h1><p class="text">Load the sample, ask two questions, then edit the query from chai to coffee.</p>
+    <div class="stage" style="flex:none">
+      <div class="window" style="flex:none; box-shadow: 18px 18px 0 var(--blue)">
+        <div class="bar">
+          <span class="dot" style="background:var(--pink)"></span><span class="dot" style="background:var(--yellow)"></span><span class="dot" style="background:var(--blue)"></span>
+          <span class="url">sql-buddy-app.vercel.app</span>
+        </div>
+        <div class="slot" style="width:${vw}px;height:${vh}px;background:var(--paper)"></div>
+      </div>
+    </div></div>`;
+  const vpage = await browser.newPage({ viewport: { width: vw + 300, height: vh + 600 }, deviceScaleFactor: 1 });
+  const bg = {};
+  let slot;
+  for (const square of [false, true]) {
+    await vpage.setContent(
+      `<!doctype html><html><head><link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Fragment+Mono&family=Schibsted+Grotesk:wght@400;700&display=block" rel="stylesheet"><style>${css} .video-card .stage{margin-top:34px}</style></head><body style="display:inline-block">${videoCard(square)}</body></html>`,
+      { waitUntil: "networkidle" },
+    );
+    await vpage.evaluate(() => document.fonts.ready);
+    slot = await vpage.evaluate(() => {
+      const c = document.querySelector(".card").getBoundingClientRect();
+      const s = document.querySelector(".slot").getBoundingClientRect();
+      return { x: Math.round(s.left - c.left), y: Math.round(s.top - c.top), w: Math.round(c.width), h: Math.round(c.height) };
+    });
+    bg[square ? "square" : "round"] = join(here, "raw", `video-bg-${square ? "square" : "round"}.png`);
+    await vpage.locator(".card").screenshot({ path: bg[square ? "square" : "round"], omitBackground: true });
+  }
+  await vpage.close();
+  const ff = (...args) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...args], { stdio: "inherit" });
+  const place = `[0][1]overlay=${slot.x}:${slot.y}:shortest=1`;
+  // MP4 and GIF can't be transparent, so they use the square-cornered card.
+  // (The GIF drops the alpha channel first; with it, every frame was stored whole: 25 MB.)
+  ff("-loop", "1", "-i", bg.square, "-i", rawVideo, "-filter_complex", `${place},crop=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p`, "-r", "30", "-c:v", "libx264", "-crf", "23", "-movflags", "+faststart", join(here, "demo.mp4"));
+  // The WebP keeps the rounded corners with transparency, like the image cards.
+  ff("-loop", "1", "-i", bg.round, "-i", rawVideo, "-filter_complex", `${place},fps=12,scale=1000:-2:flags=lanczos,format=yuva420p`, "-c:v", "libwebp_anim", "-loop", "0", "-q:v", "70", "-an", join(here, "demo.webp"));
+  ff("-loop", "1", "-i", bg.square, "-i", rawVideo, "-filter_complex", `${place},format=rgb24,fps=8,scale=720:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`, "-loop", "0", join(here, "demo.gif"));
+  console.log(`framed the demo video (${slot.w}x${slot.h}, video at ${slot.x},${slot.y})`);
+}
+
 await browser.close();

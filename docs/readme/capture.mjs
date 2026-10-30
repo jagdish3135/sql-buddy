@@ -1,5 +1,5 @@
 // Captures raw README screenshots (docs/readme/raw, turned into cards by cards.mjs)
-// and the demo video (MP4 + animated WebP + GIF).
+// and the raw demo recording (docs/readme/raw/demo.mp4).
 // Usage: node docs/readme/capture.mjs [shots,video] [baseUrl]
 // Needs the app running (npm run dev, port 5200) and ffmpeg on PATH.
 import { execFileSync } from "node:child_process";
@@ -165,10 +165,9 @@ if (what.includes("video")) {
 
   await ctx.close();
   const webm = join(tmp, readdirSync(tmp).find((f) => f.endsWith(".webm")));
-  const out = (ext) => join(here, `demo.${ext}`);
-  ffmpeg("-ss", startAt.toFixed(2), "-i", webm, "-vf", "fps=30", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "23", "-movflags", "+faststart", out("mp4"));
-  ffmpeg("-i", out("mp4"), "-vf", "fps=12,scale=960:-2:flags=lanczos", "-c:v", "libwebp_anim", "-loop", "0", "-q:v", "68", "-an", out("webp"));
-  ffmpeg("-i", out("mp4"), "-vf", "fps=8,scale=720:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle", "-loop", "0", out("gif"));
+  // The raw recording; cards.mjs frames it in a card and writes demo.mp4/.webp/.gif.
+  mkdirSync(join(here, "raw"), { recursive: true });
+  ffmpeg("-ss", startAt.toFixed(2), "-i", webm, "-vf", "fps=30", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", join(here, "raw", "demo.mp4"));
   rmSync(tmp, { recursive: true, force: true });
   console.log("video done, trimmed first", startAt.toFixed(1), "s");
 }
