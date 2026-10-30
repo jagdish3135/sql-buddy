@@ -1,0 +1,155 @@
+/* Highlighter cursor (only when <html> has .has-cursor: a fine pointer, no reduced motion). */
+
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+
+/* Keep the normal text cursor in places you type. */
+html.has-cursor textarea,
+html.has-cursor input,
+html.has-cursor [contenteditable="true"] {
+  cursor: text !important;
+}
+
+.cursor {
+  --hl-ink: var(--yellow);
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.cursor.is-dark {
+  --hl-ink: var(--pink);
+}
+
+.hl-pos {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+/* The pen pivots around its tip. */
+.hl-tilt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.hl-pen {
+  display: block;
+  margin: -38px 0 0 -29px;
+  overflow: visible;
+  transform-origin: 29px 38px;
+  transition:
+    scale 0.15s,
+    translate 0.15s,
+    opacity 0.2s;
+}
+
+.hl-plate rect {
+  fill: none;
+  stroke: var(--pink);
+  stroke-width: 1.4;
+}
+
+.hl-body {
+  fill: var(--paper-hi);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.hl-cap {
+  fill: var(--hl-ink);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.hl-tip {
+  fill: var(--hl-ink);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.is-dark .hl-plate rect {
+  stroke: var(--yellow);
+}
+
+/* Over something clickable the pen lifts slightly. */
+.cursor.is-hover .hl-pen {
+  scale: 1.12;
+  translate: 2px -2px;
+}
+
+.cursor.is-press .hl-pen {
+  scale: 0.9;
+  translate: -1px 2px;
+}
+
+/* The swipe under a hovered button or link. */
+.hl-swipe {
+  position: fixed;
+  top: -100px;
+  left: 0;
+  height: 9px;
+  background: var(--hl-ink);
+  opacity: 0;
+  rotate: -0.8deg;
+  clip-path: inset(0 100% 0 0);
+  mix-blend-mode: multiply;
+}
+
+.is-dark .hl-swipe {
+  mix-blend-mode: normal;
+}
+
+.hl-swipe.on {
+  opacity: 0.9;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Labels are written on a highlighted strip beside the tip. */
+.hl-label {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  padding: 2px 8px 1px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  rotate: -3deg;
+  opacity: 0;
+  translate: -6px 0;
+  transition:
+    opacity 0.15s,
+    translate 0.2s;
+}
+
+.cursor.is-label .hl-label {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.cursor.is-text .hl-pen,
+.cursor.is-text .hl-label,
+.cursor.is-away .hl-pen,
+.cursor.is-away .hl-label {
+  opacity: 0;
+}
+
+/* Magnetic buttons move with the CSS translate property; ease it back. */
+html.has-cursor .btn {
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}

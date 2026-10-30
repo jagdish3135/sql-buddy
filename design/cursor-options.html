@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>SQL Buddy · cursor options</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Fragment+Mono&family=Schibsted+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f3ede0; --paper-hi: #fbf8f1; --ink: #1d1d1b; --muted: #5f5a51;
+    --blue: #0078bf; --pink: #ff48b0; --pink-deep: #d1137f; --yellow: #ffe800;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Schibsted Grotesk", sans-serif;
+    background-image: radial-gradient(rgba(29,29,27,.07) 1px, transparent 1.2px); background-size: 18px 18px;
+  }
+  .sheet { width: 1400px; padding: 48px 56px 56px; }
+  header { display: flex; justify-content: space-between; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 30px; }
+  h1 { font-family: "Dela Gothic One"; font-weight: 400; font-size: 46px; margin: 0; color: var(--blue); position: relative; }
+  h1::before { content: attr(data-text); position: absolute; inset: 0; color: var(--pink); transform: translate(3px,-2px); z-index: -1; mix-blend-mode: multiply; }
+  header p { margin: 6px 0 0; color: var(--muted); }
+  .legend { font-family: "Fragment Mono"; font-size: 13px; color: var(--muted); text-align: right; }
+  .row { display: grid; grid-template-columns: 300px repeat(4, 1fr); gap: 16px; align-items: stretch; margin-bottom: 18px;
+         background: var(--paper-hi); border: 2px solid var(--ink); padding: 16px; box-shadow: 6px 6px 0 var(--blue); position: relative; }
+  .row:nth-child(even) { box-shadow: 6px 6px 0 var(--pink); }
+  .row.pick { outline: 4px solid var(--yellow); outline-offset: 4px; }
+  .meta .letter { font-family: "Dela Gothic One"; font-size: 40px; line-height: 1; color: var(--pink); text-shadow: 3px -2px 0 rgba(0,120,191,.8); }
+  .meta h2 { font-family: "Dela Gothic One"; font-weight: 400; font-size: 22px; margin: 8px 0 6px; }
+  .meta p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.45; }
+  .tag { display: inline-block; font-family: "Fragment Mono"; font-size: 11px; letter-spacing: .08em; padding: 2px 8px; margin-top: 10px; border: 1.5px solid currentColor; }
+  .tag.rec { background: var(--yellow); color: var(--ink); border-color: var(--ink); }
+  .tag.now { color: var(--muted); }
+  figure { margin: 0; display: grid; gap: 6px; }
+  figure svg { width: 100%; height: auto; display: block; border: 1.5px solid var(--ink); }
+  figcaption { font-family: "Fragment Mono"; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .heads { display: grid; grid-template-columns: 300px repeat(4, 1fr); gap: 16px; padding: 0 18px 8px; font-family: "Fragment Mono"; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <div>
+      <h1 data-text="Cursor options">Cursor options</h1>
+      <p>SQL Buddy · risograph zine · each cursor shown at 2× in four situations</p>
+    </div>
+    <div class="legend">blue #0078bf · pink #ff48b0 · yellow #ffe800<br/>all options: off on touch + reduced motion, native I-beam in text boxes</div>
+  </header>
+  <div class="heads"><span>Option</span><span>Normal</span><span>Over a (black) button</span><span>With a label</span><span>On the blue banner</span></div>
+  <div id="rows"></div>
+</div>
+
+<script>
+const B = "#0078bf", P = "#ff48b0", PD = "#d1137f", Y = "#ffe800", K = "#1d1d1b", PAPER = "#fbf8f1";
+
+// Frame backgrounds (220 x 150)
+const frames = {
+  normal: () => `<rect width="220" height="150" fill="#f3ede0"/>
+    <text x="22" y="40" font-family="Schibsted Grotesk" font-size="13" fill="#5f5a51">Ask about 2 tables</text>
+    <line x1="22" y1="112" x2="198" y2="112" stroke="${K}" stroke-width="1.5"/>`,
+  hover: () => `<rect width="220" height="150" fill="#f3ede0"/>
+    <rect x="49" y="57" width="130" height="44" fill="${P}"/>
+    <rect x="44" y="52" width="130" height="44" fill="${K}"/>
+    <text x="109" y="80" text-anchor="middle" font-family="Dela Gothic One" font-size="16" fill="${PAPER}">Ask</text>`,
+  label: () => `<defs><pattern id="ht" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.3" fill="${B}"/></pattern></defs>
+    <rect width="220" height="150" fill="${PAPER}"/><rect width="220" height="150" fill="url(#ht)" opacity=".7"/>
+    <rect x="30" y="22" width="160" height="106" fill="none" stroke="${K}" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="110" y="92" text-anchor="middle" font-family="Dela Gothic One" font-size="40" fill="${K}" opacity=".12">CSVs</text>`,
+  dark: () => `<defs><pattern id="pd" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="1.3" fill="${P}" opacity=".7"/></pattern></defs>
+    <rect width="220" height="150" fill="${B}"/><rect width="220" height="150" fill="url(#pd)"/>
+    <text x="16" y="138" font-family="Dela Gothic One" font-size="26" fill="${Y}">something.</text>`,
+};
+const at = { normal: [110, 74], hover: [118, 80], label: [104, 74], dark: [130, 62] };
+
+// Each option draws its cursor around (0,0) for a given state. Scaled 2x on the sheet.
+const options = [
+  {
+    letter: "0", name: "Dot + ring (current)", tag: "now",
+    idea: "Blue dot with a trailing double ring. Same build as LexAgent, only recoloured — the reason for this sheet.",
+    draw(s) {
+      const c = s === "dark" || s === "hover" ? Y : B; // yellow on dark, as in the real cursor
+      if (s === "label") return `<circle r="20" fill="${Y}" stroke="${B}" stroke-width="1"/><circle r="20" fill="none" stroke="${P}" stroke-width="1" transform="translate(1.5,-1)"/><text y="3" text-anchor="middle" font-family="Fragment Mono" font-size="7" fill="${K}">DROP</text>`;
+      const r = s === "hover" ? 15 : 9.5;
+      return `<circle r="${r}" fill="none" stroke="${P}" stroke-width="1" transform="translate(1.5,-1)"/><circle r="${r}" fill="none" stroke="${c}" stroke-width="1"/><circle r="${s === "hover" ? 1.2 : 2}" fill="${c}"/>`;
+    },
+  },
+  {
+    letter: "A", name: "Registration mark", tag: "rec",
+    idea: "The ⊕ printers use to line up ink layers. Pink sits off-register; over a button the two inks snap into line. Labels are rubber stamps.",
+    draw(s) {
+      const c = s === "dark" || s === "hover" ? Y : B; // yellow on dark, as in the real cursor
+      const mark = (col, dx, dy, r) => `<g transform="translate(${dx},${dy})" stroke="${col}" stroke-width="1.2" fill="none"><circle r="${r}"/><line x1="${-r - 5}" x2="${r + 5}"/><line y1="${-r - 5}" y2="${r + 5}"/></g>`;
+      if (s === "hover") return mark(P, 0, 0, 9) + mark(c, 0, 0, 9) + `<circle r="1.6" fill="${P}"/>`;
+      if (s === "label") return mark(P, 1.6, -1.2, 6) + mark(B, 0, 0, 6) + `<g transform="translate(12,6) rotate(-6)"><rect width="34" height="13" fill="${PAPER}" stroke="${PD}" stroke-width="1.2"/><text x="17" y="9.4" text-anchor="middle" font-family="Fragment Mono" font-size="7.5" fill="${PD}" letter-spacing=".6">DROP</text></g>`;
+      return mark(P, 1.6, -1.2, 6) + mark(c, 0, 0, 6);
+    },
+  },
+  {
+    letter: "B", name: "Mini Buddy", tag: "",
+    idea: "The mascot itself, tiny, tilting toward where you move. Over buttons it smiles with closed eyes; labels come out of a speech bubble.",
+    draw(s) {
+      const body = s === "dark" ? `<circle r="15" fill="${PAPER}" stroke="${K}" stroke-width="1"/>` : "";
+      const happy = s === "hover";
+      const eyes = happy
+        ? `<path d="M-5 0q2-2.5 4 0M1 0q2-2.5 4 0" stroke="${K}" stroke-width="1.1" fill="none"/>`
+        : `<ellipse cx="-3" cy="0" rx="1.1" ry="1.4" fill="${K}"/><ellipse cx="3" cy="0" rx="1.1" ry="1.4" fill="${K}"/>`;
+      const bubble = s === "label" ? `<g transform="translate(12,-22)"><path d="M0 0h36v14h-26l-5 5v-5h-5z" fill="${PAPER}" stroke="${K}" stroke-width="1"/><text x="18" y="10" text-anchor="middle" font-family="Fragment Mono" font-size="7" fill="${K}">drop it!</text></g>` : "";
+      return `${body}<g transform="rotate(${s === "normal" ? -10 : 0}) translate(0,${happy ? -2 : 0})">
+        <g transform="translate(1.5,-1)" fill="${P}"><path d="M-9 -6v13c0 2.5 4 4 9 4s9-1.5 9-4v-13"/><ellipse cy="-6" rx="9" ry="3.5"/></g>
+        <path d="M-9 -6v13c0 2.5 4 4 9 4s9-1.5 9-4v-13c0 2-4 3.5-9 3.5s-9-1.5-9-3.5z" fill="${B}"/>
+        <ellipse cy="-6" rx="9" ry="3.5" fill="#5bb3e6"/>
+        <g transform="translate(0,3)">${eyes}<path d="M-2 4q2 1.6 4 0" stroke="${K}" stroke-width="1" fill="none"/></g></g>${bubble}`;
+    },
+  },
+  {
+    letter: "C", name: "Query caret", tag: "",
+    idea: "A fat blinking text caret, like a SQL prompt. Over buttons it turns into SELECT's * asterisk; labels read like a terminal: > drop_",
+    draw(s) {
+      const c = s === "dark" || s === "hover" ? Y : B; // yellow on dark, as in the real cursor
+      if (s === "hover") return `<text x="1.5" y="10" text-anchor="middle" font-family="Dela Gothic One" font-size="30" fill="${P}">*</text><text y="11" text-anchor="middle" font-family="Dela Gothic One" font-size="30" fill="${c}">*</text>`;
+      const caret = `<rect x="-1" y="-10" width="5" height="18" fill="${P}" transform="translate(1.6,-1.2)"/><rect x="-1" y="-10" width="5" height="18" fill="${c}"/>`;
+      if (s === "label") return caret + `<g transform="translate(8,4)"><rect width="44" height="14" fill="${K}"/><text x="5" y="10" font-family="Fragment Mono" font-size="8" fill="${Y}">&gt; drop_</text></g>`;
+      return caret;
+    },
+  },
+  {
+    letter: "D", name: "Halftone blob", tag: "",
+    idea: "A little cluster of riso halftone dots. It spreads into a loose ring over buttons and wraps around the label word.",
+    draw(s) {
+      const c = s === "dark" || s === "hover" ? Y : B; // yellow on dark, as in the real cursor
+      const dots = (col, dx, dy, ring) => {
+        let out = "";
+        for (let y = -10; y <= 10; y += 4) for (let x = -10; x <= 10; x += 4) {
+          const d = Math.hypot(x, y);
+          const keep = ring ? d > 8 && d < 15 : d < 10.5;
+          if (!keep) continue;
+          const r = ring ? 1.3 : 2 - d / 10;
+          out += `<circle cx="${(x * (ring ? 1.3 : 1) + dx).toFixed(1)}" cy="${(y * (ring ? 1.3 : 1) + dy).toFixed(1)}" r="${Math.max(0.5, r).toFixed(2)}" fill="${col}"/>`;
+        }
+        return `<g>${out}</g>`;
+      };
+      if (s === "label") return dots(P, 1.5, -1, true) + dots(B, 0, 0, true) + `<text y="3" text-anchor="middle" font-family="Fragment Mono" font-size="7.5" fill="${K}">DROP</text>`;
+      return dots(P, 1.5, -1, s === "hover") + dots(c, 0, 0, s === "hover");
+    },
+  },
+  {
+    letter: "E", name: "Highlighter", tag: "",
+    idea: "A yellow chisel-tip marker. Over buttons it leaves a quick swipe; labels are written on a highlighted strip. Pink marker on the blue.",
+    draw(s) {
+      const ink = s === "dark" ? P : Y;
+      const pen = `<g transform="rotate(-35)"><rect x="-4" y="-26" width="8" height="18" rx="1.5" fill="${PAPER}" stroke="${K}" stroke-width="1"/><path d="M-4 -8h8l-1.5 7h-5z" fill="${ink}" stroke="${K}" stroke-width="1"/></g>`;
+      if (s === "hover") return `<path d="M-30 4h34" stroke="${ink}" stroke-width="7" opacity=".85"/>` + pen;
+      if (s === "label") return `<rect x="4" y="-2" width="38" height="11" fill="${ink}" transform="rotate(-3)"/><text x="23" y="6" text-anchor="middle" font-family="Fragment Mono" font-size="7.5" fill="${K}" transform="rotate(-3)">DROP</text>` + pen;
+      return pen;
+    },
+  },
+  {
+    letter: "F", name: "Riso arrow", tag: "",
+    idea: "The classic pointer, printed in two inks. Familiar and readable; it tilts and swells over buttons, with a stamped tag for labels.",
+    draw(s) {
+      const c = s === "dark" || s === "hover" ? Y : B; // yellow on dark, as in the real cursor
+      const arrow = (col, dx, dy, k) => `<path transform="translate(${dx},${dy}) scale(${k})" d="M0 0 L0 17 L4.5 13 L7.5 20 L10.5 18.6 L7.6 12 L13 12 Z" fill="${col}" ${col === Y ? `stroke="${K}" stroke-width=".8"` : ""}/>`;
+      const k = s === "hover" ? 1.25 : 1;
+      const tilt = s === "hover" ? -12 : 0;
+      const tag = s === "label" ? `<g transform="translate(14,16) rotate(-5)"><rect width="34" height="13" fill="${PAPER}" stroke="${PD}" stroke-width="1.2"/><text x="17" y="9.4" text-anchor="middle" font-family="Fragment Mono" font-size="7.5" fill="${PD}">DROP</text></g>` : "";
+      return `<g transform="rotate(${tilt})">${arrow(P, 1.6, -1.2, k)}${arrow(c, 0, 0, k)}</g>${tag}`;
+    },
+  },
+];
+
+const rows = document.getElementById("rows");
+for (const o of options) {
+  const cells = ["normal", "hover", "label", "dark"].map((s) => {
+    const [x, y] = at[s];
+    return `<figure><svg viewBox="0 0 220 150">${frames[s]()}<g transform="translate(${x},${y}) scale(2)">${o.draw(s)}</g></svg></figure>`;
+  }).join("");
+  const tag = o.tag === "rec" ? `<span class="tag rec">MY PICK</span>` : o.tag === "now" ? `<span class="tag now">WHAT YOU HAVE NOW</span>` : "";
+  rows.insertAdjacentHTML("beforeend", `<div class="row ${o.tag === "rec" ? "pick" : ""}"><div class="meta"><div class="letter">${o.letter}</div><h2>${o.name}</h2><p>${o.idea}</p>${tag}</div>${cells}</div>`);
+}
+</script>
+</body>
+</html>

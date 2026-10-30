@@ -1,0 +1,10 @@
+.env
+.env.local
+.env.*.local
+node_modules
+graphify-out
+docs
+design
+test
+dist
+*.tsbuildinfo
