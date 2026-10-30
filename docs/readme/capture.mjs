@@ -1,8 +1,9 @@
-// Captures README screenshots and the demo video (MP4 + animated WebP + GIF).
+// Captures raw README screenshots (docs/readme/raw, turned into cards by cards.mjs)
+// and the demo video (MP4 + animated WebP + GIF).
 // Usage: node docs/readme/capture.mjs [shots,video] [baseUrl]
 // Needs the app running (npm run dev, port 5200) and ffmpeg on PATH.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,8 +15,10 @@ const BASE = process.argv[3] ?? "http://localhost:5200/";
 const ffmpeg = (...args) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...args], { stdio: "inherit" });
 const browser = await chromium.launch();
 
-async function ready(page) {
+async function ready(page, { hideCursor = false } = {}) {
   await page.getByText("DuckDB ready").waitFor({ timeout: 120000 });
+  // Still screenshots look cleaner without the pen cursor; the video keeps it.
+  if (hideCursor) await page.addStyleTag({ content: ".cursor { display: none !important; }" });
   await page.evaluate(() => document.fonts.ready);
 }
 
@@ -48,11 +51,12 @@ async function mockAi(page) {
 }
 
 if (what.includes("shots")) {
-  const jpg = (name) => ({ path: join(here, `${name}.jpg`), type: "jpeg", quality: 86 });
+  mkdirSync(join(here, "raw"), { recursive: true });
+  const jpg = (name) => ({ path: join(here, "raw", `${name}.jpg`), type: "jpeg", quality: 90 });
 
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5 });
   await page.goto(BASE);
-  await ready(page);
+  await ready(page, { hideCursor: true });
   await page.mouse.move(1060, 640);
   await page.waitForTimeout(1200);
   await page.screenshot(jpg("landing"));
@@ -63,7 +67,12 @@ if (what.includes("shots")) {
     await page.locator(sel).scrollIntoViewIfNeeded();
     await page.waitForTimeout(1200);
   }
-  await page.locator(".split").screenshot(jpg("privacy"));
+  await page.evaluate(() => {
+    const head = document.querySelector(".privacy .band-head").getBoundingClientRect().top;
+    window.scrollTo(0, head + window.scrollY - 70);
+  });
+  await page.waitForTimeout(600);
+  await page.screenshot(jpg("privacy"));
   await page.evaluate(() => window.scrollTo(0, 0));
   await loadSamples(page);
   await ask(page, "Revenue by month");
@@ -75,7 +84,7 @@ if (what.includes("shots")) {
   const ai = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5 });
   await mockAi(ai);
   await ai.goto(BASE);
-  await ready(ai);
+  await ready(ai, { hideCursor: true });
   await loadSamples(ai);
   await ask(ai, "Revenue per seat for each city");
   await ai.mouse.move(1300, 120);
@@ -84,12 +93,12 @@ if (what.includes("shots")) {
 
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   await phone.goto(BASE);
-  await ready(phone);
+  await ready(phone, { hideCursor: true });
   await phone.waitForTimeout(1000);
   await phone.screenshot(jpg("mobile-landing"));
   await loadSamples(phone);
   await ask(phone, "Top 5 items by revenue");
-  await phone.locator(".answer").first().scrollIntoViewIfNeeded();
+  await phone.evaluate(() => window.scrollTo(0, document.querySelector(".answer").getBoundingClientRect().top + window.scrollY - 16));
   await phone.waitForTimeout(800);
   await phone.screenshot(jpg("mobile-answer"));
   await phone.close();

@@ -1,4 +1,4 @@
-// Builds the README banner and "how it works" diagram, each in a light and a dark version.
+// Builds the README banner and "how it works" diagram.
 // Fonts are subset from Google Fonts and embedded, so the SVGs look the same on GitHub.
 // Usage: node docs/readme/make-svgs.mjs
 import { writeFileSync } from "node:fs";
@@ -162,8 +162,15 @@ function howItWorks(t) {
 </svg>`;
 }
 
-for (const [name, t] of Object.entries(THEMES)) {
-  writeFileSync(join(here, `banner-${name}.svg`), banner(t));
-  writeFileSync(join(here, `how-it-works-${name}.svg`), howItWorks(t));
+// Cream paper only (the owner doesn't want a dark variant), with rounded corners and an
+// ink border so the card sits cleanly on both GitHub themes.
+function rounded(svg) {
+  const [, w, h] = svg.match(/width="(\d+)" height="(\d+)"/);
+  return svg
+    .replace("</style>", `</style><defs><clipPath id="round"><rect width="${w}" height="${h}" rx="26"/></clipPath></defs><g clip-path="url(#round)">`)
+    .replace(/<\/svg>\s*$/, `</g><rect x="1.5" y="1.5" width="${w - 3}" height="${h - 3}" rx="25" fill="none" stroke="#1d1d1b" stroke-width="3"/></svg>`);
 }
-console.log("wrote banner + how-it-works (light, dark)");
+
+writeFileSync(join(here, "banner.svg"), rounded(banner(THEMES.light)));
+writeFileSync(join(here, "how-it-works.svg"), rounded(howItWorks(THEMES.light)));
+console.log("wrote banner.svg + how-it-works.svg");

@@ -1,10 +1,7 @@
 <div align="center">
 
 <a href="https://sql-buddy-app.vercel.app">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-dark.svg" />
-    <img src="docs/readme/banner-light.svg" alt="SQL Buddy: drop in spreadsheets, ask in plain English. It writes the SQL, shows every line, runs it in your browser and charts the answer." width="100%" />
-  </picture>
+  <img src="docs/readme/banner.svg" alt="SQL Buddy: drop in spreadsheets, ask in plain English. It writes the SQL, shows every line, runs it in your browser and charts the answer." width="100%" />
 </a>
 
 <p>
@@ -45,21 +42,14 @@
 
 <table>
 <tr>
-<td width="50%"><img src="docs/readme/answers.jpg" alt="Two answers: revenue by month as a line, and chai sold per outlet as bars, each with its SQL" /></td>
-<td width="50%"><img src="docs/readme/ai-join.jpg" alt="An AI answer joining orders to outlets to get revenue per seat by city" /></td>
-</tr>
-<tr>
-<td><sub>Demo mode, no key needed: totals, averages, counts, top N, trends and filters.</sub></td>
-<td><sub>With an AI key: joins, follow-ups and anything else. This one joins both sample tables.</sub></td>
+<td width="50%"><img src="docs/readme/card-answers.webp" alt="Demo mode, no key needed: two answers, revenue by month and chai sold per outlet, each with its SQL" /></td>
+<td width="50%"><img src="docs/readme/card-ai.webp" alt="With an AI key: an answer that joins orders to outlets to get revenue per seat by city" /></td>
 </tr>
 </table>
 
 ## How it works
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/how-it-works-dark.svg" />
-  <img src="docs/readme/how-it-works-light.svg" alt="Drop files, DuckDB in your tab profiles them, the AI writes SQL from column names only, then the SQL is checked, run and charted. Failed SQL goes back to the AI once." width="100%" />
-</picture>
+<img src="docs/readme/how-it-works.svg" alt="Drop files, DuckDB in your tab profiles them, the AI writes SQL from column names only, then the SQL is checked, run and charted. Failed SQL goes back to the AI once." width="100%" />
 
 1. A dropped file is registered with DuckDB-WASM in a Web Worker and loaded into a table. `SUMMARIZE` profiles each column.
 2. The question and the column profiles go to `/api/ask`, a serverless function that asks the AI for one DuckDB query in a fixed JSON shape.
@@ -67,12 +57,8 @@
 
 <table>
 <tr>
-<td width="62%"><img src="docs/readme/privacy.jpg" alt="What stays in your tab (the rows) and what goes to the AI (column names and examples)" /></td>
-<td><img src="docs/readme/mobile-answer.jpg" alt="SQL Buddy on a phone" /></td>
-</tr>
-<tr>
-<td><sub>What stays in your tab, and what goes to the AI.</sub></td>
-<td><sub>Works on phones too.</sub></td>
+<td width="50%"><img src="docs/readme/card-privacy.webp" alt="Private by design: the rows stay in your tab, only column names and a few examples go to the AI" /></td>
+<td width="50%"><img src="docs/readme/card-mobile.webp" alt="SQL Buddy on two phones: the landing page and an answer with its chart and SQL" /></td>
 </tr>
 </table>
 
@@ -108,7 +94,8 @@ Keys stay on the server. The header badge shows which provider is active, never 
 | `npm run build` | Typecheck and build to `dist/` |
 | `npm run samples` | Regenerate the sample CSVs |
 | `node docs/readme/make-svgs.mjs` | Rebuild the README banner and diagram |
-| `node docs/readme/capture.mjs` | Re-capture README screenshots and the demo video (needs the dev server and ffmpeg) |
+| `node docs/readme/capture.mjs` | Re-capture raw screenshots and the demo video (needs the dev server and ffmpeg) |
+| `node docs/readme/cards.mjs` | Turn the raw screenshots into the README cards |
 
 </details>
 
